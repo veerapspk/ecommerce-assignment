@@ -114,6 +114,8 @@ app.post("/user/login", async (request, response) => {
       };
       const jwtToken = jwt.sign(payload, "MY_SECRET_TOKEN");
       const { userId } = dbUser;
+      console.log(userId);
+      console.log(jwtToken);
       response.send({ jwtToken, payload, userId });
     } else {
       response.status(400);
@@ -201,7 +203,7 @@ app.put(
     const dbResponse = await db.get(productExistQuery);
     if (dbResponse === undefined) {
       response.status(400);
-      response.send("Product Not Found");
+      response.send({ errorMsg: "Product Not Found" });
     }
 
     const deleteQuery = `DELETE FROM products WHERE productId='${productId}';`;
@@ -220,7 +222,7 @@ app.put(
 
     const insertQuery = `INSERT INTO products(productId,brand,price,rating,imageUrl,description,title) VALUES("${productId}","${brand}",${price},${rating},"${imageUrl}","${description}","${title}");`;
     const dbResult = await db.run(insertQuery);
-    response.send("Product Updated Successfully ");
+    response.send({ message: "Product Updated Successfully " });
   }
 );
 
@@ -273,6 +275,17 @@ app.get(
   }
 );
 
+//admin api for purchases list
+
+app.get("/admin/purchase/", verifyAdminToken, async (request, response) => {
+  const purchsesQuery = `
+        SELECT *
+        FROM purchases
+        ORDER BY date_column DESC;`;
+  const dbResponse = await db.all(purchsesQuery);
+  response.send({ dbResponse });
+});
+
 // user _____________________________________ actions
 
 // user products api
@@ -290,20 +303,7 @@ app.get("/user/products", verifyUserToken, async (request, response) => {
   response.send(dbResponse);
 });
 
-app.get("/user/products", verifyUserToken, async (request, response) => {
-  const {
-    sort_by_price = "PRICE_HIGH",
-    title_search = "",
-    rating = "0",
-  } = request.query;
-
-  const sort = sort_by_price === "PRICE_HIGH" ? "DESC" : "ASC";
-  const dbQuery = `SELECT * FROM products WHERE title LIKE '%${title_search}%'AND rating > '${rating}' ORDER BY price ${sort};`;
-  const dbResponse = await db.all(dbQuery);
-  response.send(dbResponse);
-});
-
-// user product details api
+// user product-details api
 
 app.get(
   "/user/products/:productId",
@@ -317,53 +317,116 @@ app.get(
   }
 );
 
-// user cart api for adding product into cart
-app.post("/user/cart/add", async (request, response) => {
-  const cartItem = request.body;
-  const { userId, productId, quantity } = cartItem;
-  const userQuery = `SELECT * FROM user_carts WHERE userId = ${userId} AND productId = '${productId}';`;
-  const existingCartItem = await db.get(userQuery);
+// user cart api to show list of products
 
-  if (existingCartItem) {
-    // If the product already exists, update the quantity
-    const { userId, productId } = existingCartItem;
-    const dbQuery = `UPDATE user_carts SET quantity = quantity + ${quantity} WHERE userId =${userId} AND productId = '${productId}';`;
-    await db.run(dbQuery);
-  } else {
-    // If the product does not exist, insert a new row
-    const dbQuery = `INSERT INTO user_carts (userId, productId, quantity) VALUES (${userId},'${productId}',${quantity});`;
-
-    await db.run(dbQuery);
-  }
-
-  response.send({ message: "Products added to cart successfully" });
-});
-
-// user cart items display api
-
-app.get("/user/cart/:userId", async (request, response) => {
+app.post("/user/cart/", verifyUserToken, async (request, response) => {
   try {
-    const { userId } = request.params;
-    console.log(userId);
-    // Retrieve the cart items for the specified user
-    const dbQuery = `SELECT user_carts.productId, products.title, user_carts.quantity
-      FROM user_carts
-      INNER JOIN products ON user_carts.productId = products.productId
-      WHERE user_carts.userId = ${userId}`;
-    const cartItems = await db.all(dbQuery);
+    const { userId, cartItems } = request.body;
 
-    response.send(cartItems);
+    // Loop through each item in the cartItems array
+    for (const cartItem of cartItems) {
+      const { productId, quantity } = cartItem;
+
+      // Checking if the product already exists in the user's cart
+      const existingCartItemQuery = `
+        SELECT * FROM user_carts WHERE userId = ${userId} AND productId = '${productId}'
+      `;
+      const existingCartItem = await db.get(existingCartItemQuery);
+
+      if (existingCartItem) {
+        // If the product exists, update its quantity
+        const updatedQuantity = existingCartItem.quantity + quantity;
+        const updateCartItemQuery = `
+          UPDATE user_carts SET quantity = ${updatedQuantity} 
+          WHERE userId = ${userId} AND productId = '${productId}'
+        `;
+        await db.run(updateCartItemQuery);
+      } else {
+        // If the product doesn't exist, insert a new record
+        const insertCartItemQuery = `
+          INSERT INTO user_carts (userId, productId, quantity) 
+          VALUES (${userId}, '${productId}', ${quantity})
+        `;
+        await db.run(insertCartItemQuery);
+      }
+    }
+
+    // Get the updated list of products in the user's cart
+    const getUserCartQuery = `
+      SELECT p.productId, p.title, p.price, p.description, p.imageUrl, p.brand, p.rating, c.quantity
+      FROM products p INNER JOIN user_carts c ON p.productId = c.productId
+      WHERE c.userId = ${userId}
+    `;
+    const userCartProducts = await db.all(getUserCartQuery);
+
+    response.send({
+      message: "Cart updated successfully",
+      cartProducts: userCartProducts,
+    });
   } catch (error) {
-    console.error("Error fetching user cart:", error);
+    console.error("Error updating user cart:", error);
     response.status(500).send({ error: "Internal server error" });
   }
 });
 
-app.post("/dummy/result", async (request, response) => {
-  console.log(request.body);
-  const query = "select * from products where rating=4.4";
+// user api for removing cart item
 
-  const items = await db.all(query);
+app.delete(
+  "/user/cart/:userId/:productId",
+  verifyUserToken,
+  async (request, response) => {
+    const userId = request.params.userId;
+    const productId = request.params.productId;
+
+    const deleteQuery = `DELETE FROM user_carts WHERE userId =${userId} AND productId ='${productId}'`;
+    await db.run(deleteQuery);
+
+    response.send({ message: "Item removed from cart successfully" });
+  }
+);
+
+// user purchases updating api
+
+app.put("user/cart/purchase", verifyUserToken, async (request, response) => {
+  const { cartItems, purchaseDate } = request.body;
+
+  let valuesString = "";
+
+  for (const each of cartItems) {
+    const { productId, userId, quantity, title } = each;
+    valuesString += `('${productId}', ${userId}, ${quantity},'${title}','${purchaseDate}'), `;
+  }
+  valuesString = valuesString.slice(0, -2);
+  const insertQuery = `
+    INSERT INTO purchases (productId, userId, quantity,title,purchaseDate) 
+    VALUES ${valuesString};`;
+
+  const dbResponse = await db.run(insertQuery);
+  const deletePurchaseQuery = `DELETE FROM user_carts WHERE userId=${userId};`;
+  await db.run(deletePurchaseQuery);
+
+  response.send({ message: "products purchased successfully" });
+});
+
+// user cart quantity update api
+
+app.put(
+  "/user/cart/:userId/:productId",
+  verifyUserToken,
+  async (request, response) => {
+    const userId = request.params.userId;
+    const productId = request.params.productId;
+    const { quantity } = request.body;
+    const updateQuery = `UPDATE user_carts SET quantity = ${quantity} WHERE userId = ${userId} AND productId = '${productId}'`;
+    await db.run(updateQuery);
+    response.send({ message: "Item quantity updated successfully" });
+  }
+);
+
+app.post("/dummy/result", async (request, response) => {
+  const v = 918200;
+  const query = `ALTER TABLE purchases ADD COLUMN title TEXT;`;
+  const items = await db.run(query);
   console.log(items);
   response.send(items);
 });

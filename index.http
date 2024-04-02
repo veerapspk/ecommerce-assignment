@@ -1,6 +1,6 @@
 
 
-POST http://localhost:3000/admin/register
+POST http://localhost:3000/user/register
 Content-Type: application/json
 
 {
@@ -9,7 +9,7 @@ Content-Type: application/json
 }
 ###
 
-POST http://localhost:3000/admin/login
+POST http://localhost:3000/user/login
 Content-Type: application/json
 
 {
@@ -34,7 +34,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InZlZ
   }
 ]
 ###
-DELETE http://localhost:3000/admin/product/6d84496f-3c3c-4239-9360-e81c4de067ef
+POST http://localhost:3000/user/cart/update
 Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InZlZXJhIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzExOTQ5MDgxfQ.xYNS-LF1zIcrW-7XC8Jalc_LP4X8FyawAw8onvTevzc
 
@@ -51,18 +51,53 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InZlZ
 ###
 
 // user cart checking
-POST http://localhost:3000/user/cart/add
+POST http://localhost:3000/user/cart/update
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InZlZXJhIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3MTIwNDE0OTN9.UP4GYr7NvH_mvTJE8g437LyJvXM_mt8KuBSA2kEl37k
 
 {
-    "userId":12,
-    "productId":"abcd",
-    "quantity":2
+  "userId": 2,
+  "cartItems": [
+      
+  {
+    "productId": "2f260856-4028-4352-9c9b-adb023441976",
+    "title": "Kids Toy Train",
+    "price": 599,
+    "description": "A colorful kids toy train by FIONA, perfect for young train enthusiasts.",
+    "imageUrl": "https://assets.ccbp.in/frontend/react-js/ecommerce/toys-red-train.png",
+    "brand": "FIONA",
+    "rating": "4.4",
+    "quantity": 1
+  },
+  {
+    "productId": "fb6b4a87-7d15-4f8f-b401-873394e471df",
+    "title": "Non-Toxic Robot Toys",
+    "price": 1545,
+    "description": "Non-toxic robot toys by FunBlast, featuring vibrant colors and safe materials.",
+    "imageUrl": "https://assets.ccbp.in/frontend/react-js/ecommerce/toys-short-green-robot.png",
+    "brand": "FunBlast",
+    "rating": "4.6",
+    "quantity": 1
+  },
+  {
+    "productId": "edbd12f7-6272-41f2-8ee4-d6b6bac7ede3",
+    "title": "Honey Teddy Bear",
+    "price": 599,
+    "description": "An adorable honey teddy bear, perfect for cuddling and gifting.",
+    "imageUrl": "https://assets.ccbp.in/frontend/react-js/ecommerce/toys-simple-teddy.png",
+    "brand": "Honey",
+    "rating": "4.7",
+    "quantity": 1
+  }
+  ]
 }
+
 
 ###
 
 GET http://localhost:3000/user/cart/12
+Content-Type: application/json
+
 
 ###
 
