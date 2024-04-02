@@ -6,11 +6,20 @@ const { open } = sqlite;
 const sqlite3 = require("sqlite3");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const cors = require("cors");
 const { v4: uuidv4 } = require("uuid");
 
+const port = process.env.PORT || 3000;
+
+app.use(cors);
 const dbPath = path.join(__dirname, "eCommerce.db");
 app.use(express.json());
 let db = null;
+
+app.get("/", (req, res) => {
+  res.send("Hello World!");
+});
+
 const initializeDbAndServer = async () => {
   try {
     db = await open({
@@ -18,7 +27,7 @@ const initializeDbAndServer = async () => {
       driver: sqlite3.Database,
     });
 
-    app.listen(3000, () => console.log("Server is running on port 3000"));
+    app.listen(port, () => console.log("Server is running on port 3000"));
   } catch (e) {
     console.error("Error initializing database:", e.message);
     process.exit(1);
@@ -424,11 +433,7 @@ app.put(
 );
 
 app.post("/dummy/result", async (request, response) => {
-  const v = 918200;
-  const query = `ALTER TABLE purchases ADD COLUMN title TEXT;`;
-  const items = await db.run(query);
-  console.log(items);
-  response.send(items);
+  response.send("apis success");
 });
 
 // all set for till now..so the next task is to
