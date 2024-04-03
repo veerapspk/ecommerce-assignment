@@ -6,6 +6,7 @@ const { open } = sqlite;
 const sqlite3 = require("sqlite3");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const cors = require("cors");
 
 const { v4: uuidv4 } = require("uuid");
 
@@ -14,6 +15,8 @@ const PORT = 3000;
 const dbPath = path.join(__dirname, "eCommerce.db");
 app.use(express.json());
 let db = null;
+
+app.use(cors());
 
 app.get("/", (req, res) => {
   console.log("hello world");
