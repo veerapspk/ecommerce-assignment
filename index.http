@@ -1,12 +1,7 @@
 
 
-POST http://localhost:3000/user/register
-Content-Type: application/json
+GET http://localhost:3000/
 
-{
-  "username": "veera",
-  "password": "amma"
-}
 ###
 
 POST http://localhost:3000/user/login

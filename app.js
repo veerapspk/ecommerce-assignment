@@ -6,17 +6,17 @@ const { open } = sqlite;
 const sqlite3 = require("sqlite3");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const cors = require("cors");
+
 const { v4: uuidv4 } = require("uuid");
 
-const port = process.env.PORT || 3000;
+const PORT = 3000;
 
-app.use(cors);
 const dbPath = path.join(__dirname, "eCommerce.db");
 app.use(express.json());
 let db = null;
 
 app.get("/", (req, res) => {
+  console.log("hello world");
   res.send("Hello World!");
 });
 
@@ -27,7 +27,9 @@ const initializeDbAndServer = async () => {
       driver: sqlite3.Database,
     });
 
-    app.listen(port, () => console.log("Server is running on port 3000"));
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
   } catch (e) {
     console.error("Error initializing database:", e.message);
     process.exit(1);
@@ -433,7 +435,7 @@ app.put(
 );
 
 app.post("/dummy/result", async (request, response) => {
-  response.send("apis success");
+  response.send("okk");
 });
 
 // all set for till now..so the next task is to
